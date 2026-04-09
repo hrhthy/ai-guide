@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Awesome AI Services</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f3;
+    --bg3: #efefec;
+    --text: #1a1a18;
+    --text2: #5f5e5a;
+    --text3: #888780;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --info-bg: #e6f1fb;
+    --info-text: #0c447c;
+    --info-border: rgba(24,95,165,0.3);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1c;
+      --bg2: #272725;
+      --bg3: #2e2e2c;
+      --text: #f0ede8;
+      --text2: #a8a69f;
+      --text3: #6e6d68;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.18);
+      --info-bg: #0c2a44;
+      --info-text: #7ab8f0;
+      --info-border: rgba(122,184,240,0.3);
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg3);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 1.25rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .site-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+    min-width: 180px;
+  }
+  .site-title span {
+    font-weight: 400;
+    color: var(--text3);
+    font-size: 14px;
+    margin-left: 8px;
+  }
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    max-width: 300px;
+    min-width: 180px;
+  }
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 8px 12px 8px 32px;
+    font-size: 13.5px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-md);
+    background: var(--bg2);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus { border-color: var(--info-text); }
+  input[type="text"]::placeholder { color: var(--text3); }
+  .count { font-size: 13px; color: var(--text3); white-space: nowrap; }
+
+  /* ── Filters ── */
+  .filter-wrap {
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 0.6rem 2rem;
+  }
+  .filter-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-label {
+    font-size: 11.5px;
+    color: var(--text3);
+    margin-right: 4px;
+  }
+  .fb {
+    font-size: 12.5px;
+    padding: 4px 13px;
+    border-radius: 999px;
+    border: 0.5px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.12s;
+    font-family: inherit;
+  }
+  .fb:hover { color: var(--text); border-color: var(--text3); }
+
+  .fb.active[data-cat="all"]   { background: #2c2c2a; color: #f1efe8; border-color: transparent; }
+  .fb.active[data-cat="LLM"]   { background: #0c447c; color: #b5d4f4; border-color: transparent; }
+  .fb.active[data-cat="이미지"] { background: #633806; color: #fac775; border-color: transparent; }
+  .fb.active[data-cat="코드"]   { background: #27500a; color: #c0dd97; border-color: transparent; }
+  .fb.active[data-cat="영상"]   { background: #72243e; color: #f4c0d1; border-color: transparent; }
+  .fb.active[data-cat="검색"]   { background: #3c3489; color: #cecbf6; border-color: transparent; }
+  .fb.active[data-cat="음성"]   { background: #085041; color: #9fe1cb; border-color: transparent; }
+  .fb.active[data-cat="문서"]   { background: #712b13; color: #f5c4b3; border-color: transparent; }
+
+  /* ── Main ── */
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 3rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .card:hover { border-color: var(--border2); transform: translateY(-1px); }
+
+  .card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .card-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .card-company { font-size: 11.5px; color: var(--text3); margin-top: 2px; }
+  .card-desc { font-size: 12.5px; color: var(--text2); line-height: 1.5; flex: 1; }
+
+  .card-links {
+    display: flex;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .card-links a {
+    font-size: 11.5px;
+    color: var(--info-text);
+    text-decoration: none;
+    border: 0.5px solid var(--info-border);
+    background: var(--info-bg);
+    padding: 3px 10px;
+    border-radius: var(--radius-md);
+    transition: opacity 0.12s;
+  }
+  .card-links a:hover { opacity: 0.75; }
+
+  /* ── Pills ── */
+  .cat-pill {
+    display: inline-block;
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .p-LLM   { background: #e6f1fb; color: #0c447c; }
+  .p-이미지 { background: #faeeda; color: #633806; }
+  .p-코드   { background: #eaf3de; color: #27500a; }
+  .p-영상   { background: #fbeaf0; color: #72243e; }
+  .p-검색   { background: #eeedfe; color: #3c3489; }
+  .p-음성   { background: #e1f5ee; color: #085041; }
+  .p-문서   { background: #faece7; color: #712b13; }
+
+  @media (prefers-color-scheme: dark) {
+    .p-LLM   { background: #0c447c; color: #b5d4f4; }
+    .p-이미지 { background: #633806; color: #fac775; }
+    .p-코드   { background: #27500a; color: #c0dd97; }
+    .p-영상   { background: #72243e; color: #f4c0d1; }
+    .p-검색   { background: #3c3489; color: #cecbf6; }
+    .p-음성   { background: #085041; color: #9fe1cb; }
+    .p-문서   { background: #712b13; color: #f5c4b3; }
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
+  }
+  .badge-hot { background: #fcebeb; color: #791f1f; }
+  .badge-new { background: #eaf3de; color: #27500a; }
+  @media (prefers-color-scheme: dark) {
+    .badge-hot { background: #791f1f; color: #f7c1c1; }
+    .badge-new { background: #27500a; color: #c0dd97; }
+  }
+
+  /* ── Empty / Footer ── */
+  .empty {
+    display: none;
+    grid-column: 1 / -1;
+    padding: 3rem;
+    text-align: center;
+    color: var(--text3);
+    font-size: 14px;
+  }
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text3);
+    padding: 1.5rem;
+    border-top: 0.5px solid var(--border);
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 600px) {
+    header, .filter-wrap { padding-left: 1rem; padding-right: 1rem; }
+    main { padding: 1rem 1rem 3rem; }
+    .grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 400px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="site-title">Awesome AI Services <span>상용 AI 서비스 모음</span></div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search" placeholder="서비스 검색..." oninput="render()">
+    </div>
+    <span class="count" id="count"></span>
+  </div>
+</header>
+
+<div class="filter-wrap">
+  <div class="filter-inner" id="filters"></div>
+</div>
+
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer>
+  데이터 수정: <code>index.html</code> 내 <code>SERVICES</code> 배열을 편집하세요 &nbsp;·&nbsp; 🔥 많이 쓰임 &nbsp;·&nbsp; ✨ 최근 주목
+</footer>
+
+<script>
+const SERVICES = [
+  // ── LLM / Chat ──────────────────────────────────────────────────
+  { name:"ChatGPT",       company:"OpenAI",       cat:"LLM",  desc:"GPT-4o 기반 대화형 AI. 가장 널리 쓰이는 LLM.",           url:"https://chat.openai.com",                    guide:"https://platform.openai.com/docs",           hot:true },
+  { name:"Claude",        company:"Anthropic",    cat:"LLM",  desc:"긴 컨텍스트와 코딩에 강한 AI 어시스턴트.",              url:"https://claude.ai",                          guide:"https://docs.anthropic.com" },
+  { name:"Gemini",        company:"Google",       cat:"LLM",  desc:"Google 검색 연동, 멀티모달 지원. 2.5 Pro.",             url:"https://gemini.google.com",                  guide:"https://ai.google.dev/docs",                 isnew:true },
+  { name:"Grok",          company:"xAI",          cat:"LLM",  desc:"X(트위터) 데이터 실시간 접근 가능. Grok 3.",            url:"https://grok.com",                           guide:"https://docs.x.ai" },
+  { name:"Mistral",       company:"Mistral AI",   cat:"LLM",  desc:"유럽 기반 고성능 LLM. 오픈소스 계열.",                  url:"https://chat.mistral.ai",                    guide:"https://docs.mistral.ai" },
+
+  // ── 이미지 생성 ─────────────────────────────────────────────────
+  { name:"Midjourney",    company:"Midjourney",   cat:"이미지", desc:"고품질 이미지 생성. Discord 및 웹 사용. v7.",          url:"https://midjourney.com",                     guide:"https://docs.midjourney.com",                hot:true },
+  { name:"DALL·E 3",      company:"OpenAI",       cat:"이미지", desc:"ChatGPT 내장. 텍스트 프롬프트 → 이미지.",             url:"https://openai.com/dall-e-3",                guide:"https://platform.openai.com/docs/guides/images" },
+  { name:"Ideogram",      company:"Ideogram",     cat:"이미지", desc:"텍스트 렌더링이 뛰어난 이미지 생성 AI.",              url:"https://ideogram.ai",                        guide:"https://developer.ideogram.ai",              isnew:true },
+  { name:"Stable Diffusion", company:"Stability AI", cat:"이미지", desc:"오픈소스 기반. ComfyUI 등과 연동 가능.",           url:"https://stability.ai",                       guide:"https://platform.stability.ai/docs" },
+  { name:"Adobe Firefly", company:"Adobe",        cat:"이미지", desc:"CC 연동. 상업적으로 안전한 학습 데이터.",             url:"https://firefly.adobe.com",                  guide:"https://www.adobe.com/kr/products/firefly.html" },
+
+  // ── 코드 어시스턴트 ─────────────────────────────────────────────
+  { name:"Cursor",        company:"Anysphere",    cat:"코드",  desc:"VSCode 포크 AI 에디터. Tab 자동완성 + Composer.",      url:"https://cursor.com",                         guide:"https://docs.cursor.com",                    hot:true },
+  { name:"GitHub Copilot",company:"GitHub",       cat:"코드",  desc:"IDE 플러그인. PR 설명·테스트 자동 생성.",             url:"https://github.com/features/copilot",        guide:"https://docs.github.com/en/copilot" },
+  { name:"Windsurf",      company:"Codeium",      cat:"코드",  desc:"Cascade 에이전트 기반 Agentic IDE.",                  url:"https://windsurf.ai",                        guide:"https://docs.windsurf.ai" },
+  { name:"Replit",        company:"Replit",       cat:"코드",  desc:"브라우저 기반 코드 실행 + AI 에이전트.",              url:"https://replit.com",                         guide:"https://docs.replit.com" },
+  { name:"Claude Code",   company:"Anthropic",    cat:"코드",  desc:"CLI 기반 에이전트 코딩 도구.",                        url:"https://claude.ai/code",                     guide:"https://docs.anthropic.com/en/docs/claude-code", isnew:true },
+
+  // ── 영상 생성 ───────────────────────────────────────────────────
+  { name:"Sora",          company:"OpenAI",       cat:"영상",  desc:"텍스트·이미지 → 고품질 영상 생성. ChatGPT Pro.",       url:"https://sora.com",                           guide:"https://platform.openai.com/docs/guides/video", isnew:true },
+  { name:"Runway",        company:"Runway",       cat:"영상",  desc:"Gen-3 Alpha. 영상 생성 + 편집 통합.",                 url:"https://runwayml.com",                       guide:"https://docs.runwayml.com" },
+  { name:"Kling",         company:"Kuaishou",     cat:"영상",  desc:"무료 크레딧 제공. 한국어 지원.",                      url:"https://klingai.com",                        guide:"https://docs.qingque.cn" },
+  { name:"Hailuo",        company:"MiniMax",      cat:"영상",  desc:"사실적인 영상 생성. 한국어 지원.",                    url:"https://hailuoai.video",                     guide:"https://platform.minimaxi.com" },
+
+  // ── 검색 / 리서치 ───────────────────────────────────────────────
+  { name:"Perplexity",    company:"Perplexity",   cat:"검색",  desc:"인용 출처 명시 AI 검색 엔진. Pro에서 Deep Research.", url:"https://perplexity.ai",                      guide:"https://docs.perplexity.ai",                 hot:true },
+  { name:"You.com",       company:"You.com",      cat:"검색",  desc:"멀티모달 AI 검색. 코드 실행 기능 포함.",              url:"https://you.com",                            guide:"https://documentation.you.com" },
+
+  // ── 음성 / 음악 ─────────────────────────────────────────────────
+  { name:"ElevenLabs",    company:"ElevenLabs",   cat:"음성",  desc:"고품질 TTS. 음성 클로닝·다국어 지원.",               url:"https://elevenlabs.io",                      guide:"https://elevenlabs.io/docs",                 hot:true },
+  { name:"Suno",          company:"Suno",         cat:"음성",  desc:"텍스트 → 음악+보컬 생성.",                           url:"https://suno.com",                           guide:"https://help.suno.com" },
+  { name:"Udio",          company:"Udio",         cat:"음성",  desc:"음악 생성. 스타일 및 구조 제어 가능.",               url:"https://udio.com",                           guide:"https://help.udio.com" },
+
+  // ── 문서 / 생산성 ───────────────────────────────────────────────
+  { name:"NotebookLM",    company:"Google",       cat:"문서",  desc:"문서 업로드 → AI 요약·Q&A·팟캐스트 생성.",           url:"https://notebooklm.google.com",              guide:"https://support.google.com/notebooklm",      isnew:true },
+  { name:"Notion AI",     company:"Notion",       cat:"문서",  desc:"Notion 내장 AI. 문서 작성·요약·번역.",               url:"https://notion.so",                          guide:"https://notion.so/help/guides/notion-ai" },
+  { name:"Gamma",         company:"Gamma",        cat:"문서",  desc:"AI 프레젠테이션·문서·웹페이지 자동 생성.",           url:"https://gamma.app",                          guide:"https://help.gamma.app" },
+];
+
+const CATS = ["all","LLM","이미지","코드","영상","검색","음성","문서"];
+let activeCat = "all";
+
+function buildFilters() {
+  document.getElementById("filters").innerHTML =
+    ['<span class="filter-label">카테고리</span>']
+    .concat(CATS.map(c =>
+      `<button class="fb${c===activeCat?' active':''}" data-cat="${c}"
+        onclick="activeCat='${c}';document.querySelectorAll('.fb').forEach(b=>b.classList.toggle('active',b.dataset.cat===activeCat));render()">
+        ${c==="all"?"전체 ✦":c}
+      </button>`
+    )).join("");
+}
+
+function render() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const items = SERVICES.filter(s => {
+    const catOk = activeCat === "all" || s.cat === activeCat;
+    const qOk = !q || [s.name, s.company, s.desc, s.cat].some(v => v.toLowerCase().includes(q));
+    return catOk && qOk;
+  });
+  document.getElementById("count").textContent = items.length + "개 서비스";
+  const grid = document.getElementById("grid");
+  if (!items.length) {
+    grid.innerHTML = '<div class="empty" style="display:block">검색 결과가 없습니다.</div>';
+    return;
+  }
+  grid.innerHTML = items.map(s => `
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-name">
+            ${s.name}
+            ${s.hot  ? '<span class="badge badge-hot">HOT</span>' : ''}
+            ${s.isnew? '<span class="badge badge-new">NEW</span>' : ''}
+          </div>
+          <div class="card-company">${s.company}</div>
+        </div>
+        <span class="cat-pill p-${s.cat}">${s.cat}</span>
+      </div>
+      <div class="card-desc">${s.desc}</div>
+      <div class="card-links">
+        <a href="${s.url}" target="_blank" rel="noopener">사이트 ↗</a>
+        <a href="${s.guide}" target="_blank" rel="noopener">가이드 ↗</a>
+      </div>
+    </div>
+  `).join("");
+}
+
+buildFilters();
+render();
+</script>
+</body>
+</html>
