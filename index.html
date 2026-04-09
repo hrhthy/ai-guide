@@ -147,6 +147,8 @@
   .fb.active[data-cat="검색"]   { background: #3c3489; color: #cecbf6; border-color: transparent; }
   .fb.active[data-cat="음성"]   { background: #085041; color: #9fe1cb; border-color: transparent; }
   .fb.active[data-cat="문서"]   { background: #712b13; color: #f5c4b3; border-color: transparent; }
+  .fb.active[data-cat="에이전트"] { background: #444441; color: #d3d1c7; border-color: transparent; }
+  .fb.active[data-cat="클라우드"] { background: #185fa5; color: #85b7eb; border-color: transparent; }
 
   /* ── Main ── */
   main {
@@ -155,9 +157,31 @@
     padding: 1.5rem 2rem 3rem;
   }
 
+  .sections { display: flex; flex-direction: column; gap: 3rem; }
+  .cat-section { margin-bottom: 2rem; }
+  .cat-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .cat-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+  .cat-section-count {
+    font-size: 11.5px;
+    color: var(--text3);
+  }
+  .cat-section-line {
+    flex: 1;
+    height: 0.5px;
+    background: var(--border);
+  }
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 10px;
   }
 
@@ -194,7 +218,8 @@
 
   .card-links {
     display: flex;
-    gap: 6px;
+    flex-wrap: wrap;
+    gap: 5px;
     margin-top: 2px;
   }
   .card-links a {
@@ -203,11 +228,19 @@
     text-decoration: none;
     border: 0.5px solid var(--info-border);
     background: var(--info-bg);
-    padding: 3px 10px;
+    padding: 3px 8px;
     border-radius: var(--radius-md);
     transition: opacity 0.12s;
+    white-space: nowrap;
   }
   .card-links a:hover { opacity: 0.75; }
+  .link-site  { background: var(--info-bg) !important; color: var(--info-text) !important; border-color: var(--info-border) !important; }
+  .link-docs  { background: #eaf3de !important; color: #27500a !important; border-color: rgba(39,80,10,0.25) !important; }
+  .link-guide { background: #faeeda !important; color: #633806 !important; border-color: rgba(99,56,6,0.25) !important; }
+  @media (prefers-color-scheme: dark) {
+    .link-docs  { background: #1a3008 !important; color: #c0dd97 !important; border-color: rgba(192,221,151,0.25) !important; }
+    .link-guide { background: #2e1a02 !important; color: #fac775 !important; border-color: rgba(250,199,117,0.25) !important; }
+  }
 
   /* ── Pills ── */
   .cat-pill {
@@ -225,16 +258,20 @@
   .p-영상   { background: #fbeaf0; color: #72243e; }
   .p-검색   { background: #eeedfe; color: #3c3489; }
   .p-음성   { background: #e1f5ee; color: #085041; }
-  .p-문서   { background: #faece7; color: #712b13; }
+  .p-문서    { background: #faece7; color: #712b13; }
+  .p-에이전트{ background: #f1efe8; color: #444441; }
+  .p-클라우드{ background: #e6f1fb; color: #185fa5; }
 
   @media (prefers-color-scheme: dark) {
-    .p-LLM   { background: #0c447c; color: #b5d4f4; }
-    .p-이미지 { background: #633806; color: #fac775; }
-    .p-코드   { background: #27500a; color: #c0dd97; }
-    .p-영상   { background: #72243e; color: #f4c0d1; }
-    .p-검색   { background: #3c3489; color: #cecbf6; }
-    .p-음성   { background: #085041; color: #9fe1cb; }
-    .p-문서   { background: #712b13; color: #f5c4b3; }
+    .p-LLM    { background: #0c447c; color: #b5d4f4; }
+    .p-이미지  { background: #633806; color: #fac775; }
+    .p-코드    { background: #27500a; color: #c0dd97; }
+    .p-영상    { background: #72243e; color: #f4c0d1; }
+    .p-검색    { background: #3c3489; color: #cecbf6; }
+    .p-음성    { background: #085041; color: #9fe1cb; }
+    .p-문서    { background: #712b13; color: #f5c4b3; }
+    .p-에이전트{ background: #444441; color: #d3d1c7; }
+    .p-클라우드{ background: #185fa5; color: #85b7eb; }
   }
 
   .badge {
@@ -274,7 +311,7 @@
   @media (max-width: 600px) {
     header, .filter-wrap { padding-left: 1rem; padding-right: 1rem; }
     main { padding: 1rem 1rem 3rem; }
-    .grid { grid-template-columns: 1fr 1fr; }
+    .grid { grid-template-columns: 1fr; }
   }
   @media (max-width: 400px) {
     .grid { grid-template-columns: 1fr; }
@@ -299,7 +336,7 @@
 </div>
 
 <main>
-  <div class="grid" id="grid"></div>
+  <div id="sections"></div>
 </main>
 
 <footer>
@@ -309,48 +346,70 @@
 <script>
 const SERVICES = [
   // ── LLM / Chat ──────────────────────────────────────────────────
-  { name:"ChatGPT",       company:"OpenAI",       cat:"LLM",  desc:"GPT-4o 기반 대화형 AI. 가장 널리 쓰이는 LLM.",           url:"https://chat.openai.com",                    guide:"https://platform.openai.com/docs",           hot:true },
-  { name:"Claude",        company:"Anthropic",    cat:"LLM",  desc:"긴 컨텍스트와 코딩에 강한 AI 어시스턴트.",              url:"https://claude.ai",                          guide:"https://docs.anthropic.com" },
-  { name:"Gemini",        company:"Google",       cat:"LLM",  desc:"Google 검색 연동, 멀티모달 지원. 2.5 Pro.",             url:"https://gemini.google.com",                  guide:"https://ai.google.dev/docs",                 isnew:true },
-  { name:"Grok",          company:"xAI",          cat:"LLM",  desc:"X(트위터) 데이터 실시간 접근 가능. Grok 3.",            url:"https://grok.com",                           guide:"https://docs.x.ai" },
-  { name:"Mistral",       company:"Mistral AI",   cat:"LLM",  desc:"유럽 기반 고성능 LLM. 오픈소스 계열.",                  url:"https://chat.mistral.ai",                    guide:"https://docs.mistral.ai" },
+  { name:"ChatGPT",          company:"OpenAI",       cat:"LLM",     desc:"GPT-4o 기반 대화형 AI. 가장 널리 쓰이는 LLM.",            url:"https://chat.openai.com",                    docs:"https://platform.openai.com/docs",               guide:"https://platform.openai.com/docs/quickstart",    hot:true },
+  { name:"Claude",           company:"Anthropic",    cat:"LLM",     desc:"긴 컨텍스트와 코딩에 강한 AI 어시스턴트.",               url:"https://claude.ai",                          docs:"https://docs.anthropic.com",                     guide:"https://docs.anthropic.com/en/docs/intro-to-claude" },
+  { name:"Gemini",           company:"Google",       cat:"LLM",     desc:"Google 검색 연동, 멀티모달 지원. 2.5 Pro.",              url:"https://gemini.google.com",                  docs:"https://ai.google.dev/docs",                     guide:"https://ai.google.dev/gemini-api/docs/quickstart", isnew:true },
+  { name:"Grok",             company:"xAI",          cat:"LLM",     desc:"X(트위터) 데이터 실시간 접근 가능. Grok 3.",             url:"https://grok.com",                           docs:"https://docs.x.ai",                              guide:"https://docs.x.ai/docs/overview" },
+  { name:"Mistral",          company:"Mistral AI",   cat:"LLM",     desc:"유럽 기반 고성능 LLM. 오픈소스 계열.",                   url:"https://chat.mistral.ai",                    docs:"https://docs.mistral.ai",                        guide:"https://docs.mistral.ai/getting-started/quickstart" },
+  { name:"Google AI Studio", company:"Google",       cat:"LLM",     desc:"Gemini API 테스트·프로토타이핑 환경. 무료 사용 가능.",   url:"https://aistudio.google.com",                docs:"https://ai.google.dev/aistudio",                 guide:"https://ai.google.dev/gemini-api/docs/ai-studio-quickstart", isnew:true },
+  { name:"Poe",              company:"Quora",        cat:"LLM",     desc:"Claude·GPT·Gemini 등 멀티 LLM 통합 플랫폼.",            url:"https://poe.com",                            docs:"https://developer.poe.com",                      guide:"https://creator.poe.com/docs" },
 
-  // ── 이미지 생성 ─────────────────────────────────────────────────
-  { name:"Midjourney",    company:"Midjourney",   cat:"이미지", desc:"고품질 이미지 생성. Discord 및 웹 사용. v7.",          url:"https://midjourney.com",                     guide:"https://docs.midjourney.com",                hot:true },
-  { name:"DALL·E 3",      company:"OpenAI",       cat:"이미지", desc:"ChatGPT 내장. 텍스트 프롬프트 → 이미지.",             url:"https://openai.com/dall-e-3",                guide:"https://platform.openai.com/docs/guides/images" },
-  { name:"Ideogram",      company:"Ideogram",     cat:"이미지", desc:"텍스트 렌더링이 뛰어난 이미지 생성 AI.",              url:"https://ideogram.ai",                        guide:"https://developer.ideogram.ai",              isnew:true },
-  { name:"Stable Diffusion", company:"Stability AI", cat:"이미지", desc:"오픈소스 기반. ComfyUI 등과 연동 가능.",           url:"https://stability.ai",                       guide:"https://platform.stability.ai/docs" },
-  { name:"Adobe Firefly", company:"Adobe",        cat:"이미지", desc:"CC 연동. 상업적으로 안전한 학습 데이터.",             url:"https://firefly.adobe.com",                  guide:"https://www.adobe.com/kr/products/firefly.html" },
+  // ── 이미지 / 디자인 ─────────────────────────────────────────────
+  { name:"Midjourney",       company:"Midjourney",   cat:"이미지",   desc:"고품질 이미지 생성. Discord 및 웹 사용. v7.",           url:"https://midjourney.com",                     docs:"https://docs.midjourney.com",                    guide:"https://docs.midjourney.com/docs/quick-start",   hot:true },
+  { name:"DALL·E 3",         company:"OpenAI",       cat:"이미지",   desc:"ChatGPT 내장. 텍스트 프롬프트 → 이미지.",              url:"https://openai.com/dall-e-3",                docs:"https://platform.openai.com/docs/guides/images", guide:"https://platform.openai.com/docs/guides/images/introduction" },
+  { name:"Ideogram",         company:"Ideogram",     cat:"이미지",   desc:"텍스트 렌더링이 뛰어난 이미지 생성 AI.",               url:"https://ideogram.ai",                        docs:"https://developer.ideogram.ai",                  guide:"https://developer.ideogram.ai/ideogram-api/api-reference/getting-started", isnew:true },
+  { name:"Stable Diffusion", company:"Stability AI", cat:"이미지",   desc:"오픈소스 기반. ComfyUI 등과 연동 가능.",               url:"https://stability.ai",                       docs:"https://platform.stability.ai/docs",             guide:"https://platform.stability.ai/docs/getting-started" },
+  { name:"Adobe Firefly",    company:"Adobe",        cat:"이미지",   desc:"CC 연동. 상업적으로 안전한 학습 데이터.",              url:"https://firefly.adobe.com",                  docs:"https://developer.adobe.com/firefly-services/docs", guide:"https://helpx.adobe.com/firefly/using/get-started.html" },
+  { name:"Leonardo AI",      company:"Leonardo AI",  cat:"이미지",   desc:"게임·일러스트 특화 이미지 생성 AI.",                  url:"https://leonardo.ai",                        docs:"https://docs.leonardo.ai",                       guide:"https://docs.leonardo.ai/docs/getting-started" },
+  { name:"Canva",            company:"Canva",        cat:"이미지",   desc:"AI 기능 탑재 온라인 디자인 툴. Magic Studio 포함.",    url:"https://canva.com",                          docs:"https://www.canva.com/developers",                guide:"https://www.canva.com/help/canva-ai-features",   hot:true },
+  { name:"Framer",           company:"Framer",       cat:"이미지",   desc:"AI 웹사이트 빌더. 디자인 → 퍼블리시 원스톱.",         url:"https://framer.com",                         docs:"https://www.framer.com/developers",               guide:"https://www.framer.com/learn" },
 
   // ── 코드 어시스턴트 ─────────────────────────────────────────────
-  { name:"Cursor",        company:"Anysphere",    cat:"코드",  desc:"VSCode 포크 AI 에디터. Tab 자동완성 + Composer.",      url:"https://cursor.com",                         guide:"https://docs.cursor.com",                    hot:true },
-  { name:"GitHub Copilot",company:"GitHub",       cat:"코드",  desc:"IDE 플러그인. PR 설명·테스트 자동 생성.",             url:"https://github.com/features/copilot",        guide:"https://docs.github.com/en/copilot" },
-  { name:"Windsurf",      company:"Codeium",      cat:"코드",  desc:"Cascade 에이전트 기반 Agentic IDE.",                  url:"https://windsurf.ai",                        guide:"https://docs.windsurf.ai" },
-  { name:"Replit",        company:"Replit",       cat:"코드",  desc:"브라우저 기반 코드 실행 + AI 에이전트.",              url:"https://replit.com",                         guide:"https://docs.replit.com" },
-  { name:"Claude Code",   company:"Anthropic",    cat:"코드",  desc:"CLI 기반 에이전트 코딩 도구.",                        url:"https://claude.ai/code",                     guide:"https://docs.anthropic.com/en/docs/claude-code", isnew:true },
+  { name:"Cursor",           company:"Anysphere",    cat:"코드",     desc:"VSCode 포크 AI 에디터. Tab 자동완성 + Composer.",      url:"https://cursor.com",                         docs:"https://docs.cursor.com",                        guide:"https://docs.cursor.com/get-started/migrate-from-vscode", hot:true },
+  { name:"GitHub Copilot",   company:"GitHub",       cat:"코드",     desc:"IDE 플러그인. PR 설명·테스트 자동 생성.",             url:"https://github.com/features/copilot",        docs:"https://docs.github.com/en/copilot",             guide:"https://docs.github.com/en/copilot/quickstart" },
+  { name:"Windsurf",         company:"Codeium",      cat:"코드",     desc:"Cascade 에이전트 기반 Agentic IDE.",                  url:"https://windsurf.ai",                        docs:"https://docs.windsurf.ai",                       guide:"https://docs.windsurf.ai/windsurf/getting-started" },
+  { name:"Replit",           company:"Replit",       cat:"코드",     desc:"브라우저 기반 코드 실행 + AI 에이전트.",              url:"https://replit.com",                         docs:"https://docs.replit.com",                        guide:"https://docs.replit.com/getting-started/intro-replit" },
+  { name:"Claude Code",      company:"Anthropic",    cat:"코드",     desc:"CLI 기반 에이전트 코딩 도구.",                        url:"https://claude.ai/code",                     docs:"https://docs.anthropic.com/en/docs/claude-code", guide:"https://docs.anthropic.com/en/docs/claude-code/quickstart", isnew:true },
+  { name:"Google Colab",     company:"Google",       cat:"코드",     desc:"클라우드 Python 노트북. GPU 무료 제공.",              url:"https://colab.research.google.com",          docs:"https://research.google.com/colaboratory/faq.html", guide:"https://colab.research.google.com/notebooks/intro.ipynb" },
 
   // ── 영상 생성 ───────────────────────────────────────────────────
-  { name:"Sora",          company:"OpenAI",       cat:"영상",  desc:"텍스트·이미지 → 고품질 영상 생성. ChatGPT Pro.",       url:"https://sora.com",                           guide:"https://platform.openai.com/docs/guides/video", isnew:true },
-  { name:"Runway",        company:"Runway",       cat:"영상",  desc:"Gen-3 Alpha. 영상 생성 + 편집 통합.",                 url:"https://runwayml.com",                       guide:"https://docs.runwayml.com" },
-  { name:"Kling",         company:"Kuaishou",     cat:"영상",  desc:"무료 크레딧 제공. 한국어 지원.",                      url:"https://klingai.com",                        guide:"https://docs.qingque.cn" },
-  { name:"Hailuo",        company:"MiniMax",      cat:"영상",  desc:"사실적인 영상 생성. 한국어 지원.",                    url:"https://hailuoai.video",                     guide:"https://platform.minimaxi.com" },
+  { name:"Sora",             company:"OpenAI",       cat:"영상",     desc:"텍스트·이미지 → 고품질 영상 생성. ChatGPT Pro.",      url:"https://sora.com",                           docs:"https://platform.openai.com/docs/guides/video",  guide:"https://sora.com/explore", isnew:true },
+  { name:"Runway",           company:"Runway",       cat:"영상",     desc:"Gen-3 Alpha. 영상 생성 + 편집 통합.",                url:"https://runwayml.com",                       docs:"https://docs.runwayml.com",                      guide:"https://help.runwayml.com/hc/en-us" },
+  { name:"Kling",            company:"Kuaishou",     cat:"영상",     desc:"무료 크레딧 제공. 한국어 지원.",                     url:"https://klingai.com",                        docs:"https://docs.qingque.cn",                        guide:"https://klingai.com/help" },
+  { name:"Hailuo",           company:"MiniMax",      cat:"영상",     desc:"사실적인 영상 생성. 한국어 지원.",                   url:"https://hailuoai.video",                     docs:"https://platform.minimaxi.com",                  guide:"https://platform.minimaxi.com/document/guides" },
+  { name:"Higgsfield",       company:"Higgsfield",   cat:"영상",     desc:"캐릭터 일관성 특화 AI 영상 생성.",                   url:"https://higgsfield.ai",                      docs:"https://higgsfield.ai/docs",                     guide:"https://higgsfield.ai/learn" },
+  { name:"Veo",              company:"Google",       cat:"영상",     desc:"Google DeepMind 영상 생성 모델. 고해상도 지원.",      url:"https://deepmind.google/technologies/veo",   docs:"https://ai.google.dev/docs",                     guide:"https://aitestkitchen.withgoogle.com", isnew:true },
 
   // ── 검색 / 리서치 ───────────────────────────────────────────────
-  { name:"Perplexity",    company:"Perplexity",   cat:"검색",  desc:"인용 출처 명시 AI 검색 엔진. Pro에서 Deep Research.", url:"https://perplexity.ai",                      guide:"https://docs.perplexity.ai",                 hot:true },
-  { name:"You.com",       company:"You.com",      cat:"검색",  desc:"멀티모달 AI 검색. 코드 실행 기능 포함.",              url:"https://you.com",                            guide:"https://documentation.you.com" },
+  { name:"Perplexity",       company:"Perplexity",   cat:"검색",     desc:"인용 출처 명시 AI 검색. Pro에서 Deep Research.",     url:"https://perplexity.ai",                      docs:"https://docs.perplexity.ai",                     guide:"https://www.perplexity.ai/hub/faq",              hot:true },
+  { name:"You.com",          company:"You.com",      cat:"검색",     desc:"멀티모달 AI 검색. 코드 실행 기능 포함.",             url:"https://you.com",                            docs:"https://documentation.you.com",                  guide:"https://documentation.you.com/docs/getting-started" },
+  { name:"Genspark",         company:"Genspark",     cat:"검색",     desc:"AI 검색 + Sparkpage 자동 생성.",                    url:"https://genspark.ai",                        docs:"https://www.genspark.ai/docs",                   guide:"https://www.genspark.ai/help", isnew:true },
+  { name:"Elicit",           company:"Elicit",       cat:"검색",     desc:"학술 논문 리서치 자동화. 요약·추출 특화.",           url:"https://elicit.com",                         docs:"https://elicit.com/docs",                        guide:"https://elicit.com/guide" },
+  { name:"Consensus",        company:"Consensus",    cat:"검색",     desc:"논문 기반 AI 검색 엔진. 과학적 근거 중심.",          url:"https://consensus.app",                      docs:"https://consensus.app/home/blog/api",            guide:"https://consensus.app/home/faq" },
 
   // ── 음성 / 음악 ─────────────────────────────────────────────────
-  { name:"ElevenLabs",    company:"ElevenLabs",   cat:"음성",  desc:"고품질 TTS. 음성 클로닝·다국어 지원.",               url:"https://elevenlabs.io",                      guide:"https://elevenlabs.io/docs",                 hot:true },
-  { name:"Suno",          company:"Suno",         cat:"음성",  desc:"텍스트 → 음악+보컬 생성.",                           url:"https://suno.com",                           guide:"https://help.suno.com" },
-  { name:"Udio",          company:"Udio",         cat:"음성",  desc:"음악 생성. 스타일 및 구조 제어 가능.",               url:"https://udio.com",                           guide:"https://help.udio.com" },
+  { name:"ElevenLabs",       company:"ElevenLabs",   cat:"음성",     desc:"고품질 TTS. 음성 클로닝·다국어 지원.",              url:"https://elevenlabs.io",                      docs:"https://elevenlabs.io/docs",                     guide:"https://elevenlabs.io/docs/introduction",        hot:true },
+  { name:"Suno",             company:"Suno",         cat:"음성",     desc:"텍스트 → 음악+보컬 생성.",                          url:"https://suno.com",                           docs:"https://help.suno.com",                          guide:"https://help.suno.com/en/articles/getting-started" },
+  { name:"Udio",             company:"Udio",         cat:"음성",     desc:"음악 생성. 스타일 및 구조 세밀 제어 가능.",          url:"https://udio.com",                           docs:"https://help.udio.com",                          guide:"https://help.udio.com/en/getting-started" },
+  { name:"TurboScribe",      company:"TurboScribe",  cat:"음성",     desc:"음성·영상 → 텍스트 변환(STT). 98개 언어 지원.",     url:"https://turboscribe.ai",                     docs:"https://turboscribe.ai/api",                     guide:"https://turboscribe.ai/help" },
 
   // ── 문서 / 생산성 ───────────────────────────────────────────────
-  { name:"NotebookLM",    company:"Google",       cat:"문서",  desc:"문서 업로드 → AI 요약·Q&A·팟캐스트 생성.",           url:"https://notebooklm.google.com",              guide:"https://support.google.com/notebooklm",      isnew:true },
-  { name:"Notion AI",     company:"Notion",       cat:"문서",  desc:"Notion 내장 AI. 문서 작성·요약·번역.",               url:"https://notion.so",                          guide:"https://notion.so/help/guides/notion-ai" },
-  { name:"Gamma",         company:"Gamma",        cat:"문서",  desc:"AI 프레젠테이션·문서·웹페이지 자동 생성.",           url:"https://gamma.app",                          guide:"https://help.gamma.app" },
-];
+  { name:"NotebookLM",       company:"Google",       cat:"문서",     desc:"문서 업로드 → AI 요약·Q&A·팟캐스트 생성.",          url:"https://notebooklm.google.com",              docs:"https://support.google.com/notebooklm",          guide:"https://support.google.com/notebooklm/answer/14276468", isnew:true },
+  { name:"Notion AI",        company:"Notion",       cat:"문서",     desc:"Notion 내장 AI. 문서 작성·요약·번역.",              url:"https://notion.so",                          docs:"https://developers.notion.com",                  guide:"https://notion.so/help/guides/notion-ai" },
+  { name:"Gamma",            company:"Gamma",        cat:"문서",     desc:"AI 프레젠테이션·문서·웹페이지 자동 생성.",          url:"https://gamma.app",                          docs:"https://help.gamma.app",                         guide:"https://help.gamma.app/en/articles/get-started" },
+  { name:"Grammarly",        company:"Grammarly",    cat:"문서",     desc:"영문 교정·글쓰기 어시스턴트. 브라우저 확장 지원.",  url:"https://grammarly.com",                      docs:"https://developer.grammarly.com",                guide:"https://support.grammarly.com/hc/en-us/articles/getting-started" },
+  { name:"QuillBot",         company:"QuillBot",     cat:"문서",     desc:"패러프레이징·요약·번역·문법 교정 올인원.",          url:"https://quillbot.com",                       docs:"https://quillbot.com/api",                       guide:"https://quillbot.com/blog/how-to-use-quillbot" },
+  { name:"Jasper",           company:"Jasper",       cat:"문서",     desc:"마케팅 카피·콘텐츠 작성 특화 AI.",                 url:"https://jasper.ai",                          docs:"https://developers.jasper.ai",                   guide:"https://www.jasper.ai/blog/how-to-use-jasper-ai" },
+  { name:"Copy.ai",          company:"Copy.ai",      cat:"문서",     desc:"마케팅 카피·워크플로우 자동화 특화.",               url:"https://copy.ai",                            docs:"https://docs.copy.ai",                           guide:"https://docs.copy.ai/docs/getting-started" },
 
-const CATS = ["all","LLM","이미지","코드","영상","검색","음성","문서"];
+  // ── 에이전트 ────────────────────────────────────────────────────
+  { name:"Manus",            company:"Manus",        cat:"에이전트", desc:"범용 AI 에이전트. 웹·파일·코드 작업 자동화.",       url:"https://manus.im",                           docs:"https://manus.im/docs",                          guide:"https://manus.im/blog/getting-started", isnew:true },
+
+  // ── 클라우드 / 인프라 ───────────────────────────────────────────
+  { name:"AWS AI Services",  company:"Amazon",       cat:"클라우드", desc:"Bedrock·SageMaker 등 AI 인프라·API 서비스 통합.",   url:"https://aws.amazon.com/ai",                  docs:"https://docs.aws.amazon.com/ai",                 guide:"https://aws.amazon.com/getting-started/hands-on" },
+]
+
+const CATS = ["all","LLM","이미지","코드","영상","검색","음성","문서","에이전트","클라우드"];
 let activeCat = "all";
 
 function buildFilters() {
@@ -364,20 +423,8 @@ function buildFilters() {
     )).join("");
 }
 
-function render() {
-  const q = document.getElementById("search").value.toLowerCase();
-  const items = SERVICES.filter(s => {
-    const catOk = activeCat === "all" || s.cat === activeCat;
-    const qOk = !q || [s.name, s.company, s.desc, s.cat].some(v => v.toLowerCase().includes(q));
-    return catOk && qOk;
-  });
-  document.getElementById("count").textContent = items.length + "개 서비스";
-  const grid = document.getElementById("grid");
-  if (!items.length) {
-    grid.innerHTML = '<div class="empty" style="display:block">검색 결과가 없습니다.</div>';
-    return;
-  }
-  grid.innerHTML = items.map(s => `
+function cardHTML(s) {
+  return `
     <div class="card">
       <div class="card-head">
         <div>
@@ -392,11 +439,60 @@ function render() {
       </div>
       <div class="card-desc">${s.desc}</div>
       <div class="card-links">
-        <a href="${s.url}" target="_blank" rel="noopener">사이트 ↗</a>
-        <a href="${s.guide}" target="_blank" rel="noopener">가이드 ↗</a>
+        <a class="link-site"  href="${s.url}"   target="_blank" rel="noopener">사이트 ↗</a>
+        ${s.docs  ? `<a class="link-docs"  href="${s.docs}"  target="_blank" rel="noopener">공식문서 ↗</a>` : ''}
+        ${s.guide ? `<a class="link-guide" href="${s.guide}" target="_blank" rel="noopener">사용가이드 ↗</a>` : ''}
       </div>
-    </div>
-  `).join("");
+    </div>`;
+}
+
+function render() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const items = SERVICES.filter(s => {
+    const catOk = activeCat === "all" || s.cat === activeCat;
+    const qOk = !q || [s.name, s.company, s.desc, s.cat].some(v => v.toLowerCase().includes(q));
+    return catOk && qOk;
+  });
+  document.getElementById("count").textContent = items.length + "개 서비스";
+  const container = document.getElementById("sections");
+  if (!items.length) {
+    container.innerHTML = '<div class="empty" style="display:block;padding:3rem;text-align:center;color:var(--text3);font-size:14px;">검색 결과가 없습니다.</div>';
+    return;
+  }
+
+  // 카테고리 순서 유지하며 그룹핑
+  const order = CATS.filter(c => c !== "all");
+  const grouped = {};
+  items.forEach(s => {
+    if (!grouped[s.cat]) grouped[s.cat] = [];
+    grouped[s.cat].push(s);
+  });
+
+  const activeCats = activeCat === "all" ? order.filter(c => grouped[c]) : [activeCat];
+
+  container.innerHTML = activeCats.map(cat => {
+    if (!grouped[cat]) return '';
+    const catItems = grouped[cat];
+    return `
+      <div class="cat-section">
+        <div class="cat-section-header">
+          <span class="cat-pill p-${cat}">${cat}</span>
+          <span class="cat-section-title">${catLabel(cat)}</span>
+          <span class="cat-section-count">${catItems.length}개</span>
+          <div class="cat-section-line"></div>
+        </div>
+        <div class="grid">${catItems.map(cardHTML).join("")}</div>
+      </div>`;
+  }).join("");
+}
+
+function catLabel(cat) {
+  const labels = {
+    "LLM":"LLM / Chat", "이미지":"이미지 / 디자인", "코드":"코드 어시스턴트",
+    "영상":"영상 생성", "검색":"검색 / 리서치", "음성":"음성 / 음악",
+    "문서":"문서 / 생산성", "에이전트":"에이전트", "클라우드":"클라우드 / 인프라"
+  };
+  return labels[cat] || cat;
 }
 
 buildFilters();
