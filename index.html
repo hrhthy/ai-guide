@@ -166,12 +166,12 @@
     margin-bottom: 10px;
   }
   .cat-section-title {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--text2);
   }
   .cat-section-count {
-    font-size: 11.5px;
+    font-size: 14.5px;
     color: var(--text3);
   }
   .cat-section-line {
@@ -245,7 +245,16 @@
   /* ── Pills ── */
   .cat-pill {
     display: inline-block;
-    font-size: 10.5px;
+    font-size: 14.5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .cat-pill2 {
+    display: inline-block;
+    font-size: 11.5px;
     padding: 2px 8px;
     border-radius: 999px;
     font-weight: 500;
@@ -349,8 +358,6 @@ const SERVICES = [
   { name:"ChatGPT",          company:"OpenAI",       cat:"LLM",     desc:"GPT-4o 기반 대화형 AI. 가장 널리 쓰이는 LLM.",            url:"https://chat.openai.com",                    docs:"https://platform.openai.com/docs",               guide:"https://platform.openai.com/docs/quickstart",    hot:true },
   { name:"Claude",           company:"Anthropic",    cat:"LLM",     desc:"긴 컨텍스트와 코딩에 강한 AI 어시스턴트.",               url:"https://claude.ai",                          docs:"https://docs.anthropic.com",                     guide:"https://docs.anthropic.com/en/docs/intro-to-claude" },
   { name:"Gemini",           company:"Google",       cat:"LLM",     desc:"Google 검색 연동, 멀티모달 지원. 2.5 Pro.",              url:"https://gemini.google.com",                  docs:"https://ai.google.dev/docs",                     guide:"https://ai.google.dev/gemini-api/docs/quickstart", isnew:true },
-  { name:"Grok",             company:"xAI",          cat:"LLM",     desc:"X(트위터) 데이터 실시간 접근 가능. Grok 3.",             url:"https://grok.com",                           docs:"https://docs.x.ai",                              guide:"https://docs.x.ai/docs/overview" },
-  { name:"Mistral",          company:"Mistral AI",   cat:"LLM",     desc:"유럽 기반 고성능 LLM. 오픈소스 계열.",                   url:"https://chat.mistral.ai",                    docs:"https://docs.mistral.ai",                        guide:"https://docs.mistral.ai/getting-started/quickstart" },
   { name:"Google AI Studio", company:"Google",       cat:"LLM",     desc:"Gemini API 테스트·프로토타이핑 환경. 무료 사용 가능.",   url:"https://aistudio.google.com",                docs:"https://ai.google.dev/aistudio",                 guide:"https://ai.google.dev/gemini-api/docs/ai-studio-quickstart", isnew:true },
   { name:"Poe",              company:"Quora",        cat:"LLM",     desc:"Claude·GPT·Gemini 등 멀티 LLM 통합 플랫폼.",            url:"https://poe.com",                            docs:"https://developer.poe.com",                      guide:"https://creator.poe.com/docs" },
 
@@ -373,12 +380,11 @@ const SERVICES = [
   { name:"Google Colab",     company:"Google",       cat:"코드",     desc:"클라우드 Python 노트북. GPU 무료 제공.",              url:"https://colab.research.google.com",          docs:"https://research.google.com/colaboratory/faq.html", guide:"https://colab.research.google.com/notebooks/intro.ipynb" },
 
   // ── 영상 생성 ───────────────────────────────────────────────────
-  { name:"Sora",             company:"OpenAI",       cat:"영상",     desc:"텍스트·이미지 → 고품질 영상 생성. ChatGPT Pro.",      url:"https://sora.com",                           docs:"https://platform.openai.com/docs/guides/video",  guide:"https://sora.com/explore", isnew:true },
+  { name:"Higgsfield",       company:"Higgsfield",   cat:"영상",     desc:"캐릭터 일관성 특화 AI 영상 생성.",                   url:"https://higgsfield.ai",                      docs:"https://higgsfield.ai/docs",                     guide:"https://higgsfield.ai/learn" },
+  { name:"Veo",              company:"Google",       cat:"영상",     desc:"Google DeepMind 영상 생성 모델. 고해상도 지원.",      url:"https://deepmind.google/technologies/veo",   docs:"https://ai.google.dev/docs",                     guide:"https://aitestkitchen.withgoogle.com", isnew:true },
   { name:"Runway",           company:"Runway",       cat:"영상",     desc:"Gen-3 Alpha. 영상 생성 + 편집 통합.",                url:"https://runwayml.com",                       docs:"https://docs.runwayml.com",                      guide:"https://help.runwayml.com/hc/en-us" },
   { name:"Kling",            company:"Kuaishou",     cat:"영상",     desc:"무료 크레딧 제공. 한국어 지원.",                     url:"https://klingai.com",                        docs:"https://docs.qingque.cn",                        guide:"https://klingai.com/help" },
   { name:"Hailuo",           company:"MiniMax",      cat:"영상",     desc:"사실적인 영상 생성. 한국어 지원.",                   url:"https://hailuoai.video",                     docs:"https://platform.minimaxi.com",                  guide:"https://platform.minimaxi.com/document/guides" },
-  { name:"Higgsfield",       company:"Higgsfield",   cat:"영상",     desc:"캐릭터 일관성 특화 AI 영상 생성.",                   url:"https://higgsfield.ai",                      docs:"https://higgsfield.ai/docs",                     guide:"https://higgsfield.ai/learn" },
-  { name:"Veo",              company:"Google",       cat:"영상",     desc:"Google DeepMind 영상 생성 모델. 고해상도 지원.",      url:"https://deepmind.google/technologies/veo",   docs:"https://ai.google.dev/docs",                     guide:"https://aitestkitchen.withgoogle.com", isnew:true },
 
   // ── 검색 / 리서치 ───────────────────────────────────────────────
   { name:"Perplexity",       company:"Perplexity",   cat:"검색",     desc:"인용 출처 명시 AI 검색. Pro에서 Deep Research.",     url:"https://perplexity.ai",                      docs:"https://docs.perplexity.ai",                     guide:"https://www.perplexity.ai/hub/faq",              hot:true },
@@ -435,7 +441,7 @@ function cardHTML(s) {
           </div>
           <div class="card-company">${s.company}</div>
         </div>
-        <span class="cat-pill p-${s.cat}">${s.cat}</span>
+        <span class="cat-pill2 p-${s.cat}">${s.cat}</span>
       </div>
       <div class="card-desc">${s.desc}</div>
       <div class="card-links">
