@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사용가이드 — Awesome AI Services</title>
+
+<!-- Quill.js 리치텍스트 에디터 -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set, push, get }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBACul8gnc1nUBYvKjvNuu8ErtrkTbrS38",
+    authDomain: "ai-wiki-19894.firebaseapp.com",
+    databaseURL: "https://ai-wiki-19894-default-rtdb.firebaseio.com",
+    projectId: "ai-wiki-19894",
+    storageBucket: "ai-wiki-19894.firebasestorage.app",
+    messagingSenderId: "516958537205",
+    appId: "1:516958537205:web:26bc59442a128547d48cbc"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  // URL 파라미터 파싱
+  const params  = new URLSearchParams(location.search);
+  const SERVICE = params.get("service") || "Unknown";
+  const CAT     = params.get("cat")     || "";
+  const COMPANY = params.get("company") || "";
+  const KEY     = SERVICE.toLowerCase().replace(/[^a-z0-9가-힣]/g, "_");
+
+  // 제목 세팅
+  document.title = `${SERVICE} 사용가이드 — Awesome AI Services`;
+  document.getElementById("wiki-service-name").textContent = SERVICE;
+  document.getElementById("wiki-company").textContent = COMPANY;
+  if (CAT) {
+    const pill = document.getElementById("wiki-cat-pill");
+    pill.textContent = CAT;
+    pill.className = `cat-pill p-${CAT}`;
+  }
+
+  const IMGBB_KEY = "b7a5f497c99c16501da071429ea8be0a";
+
+  // imgbb 업로드 함수
+  async function uploadToImgbb(file) {
+    const MAX_MB = 32;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      showToast(`이미지는 ${MAX_MB}MB 이하만 가능합니다.`, true);
+      return null;
+    }
+    const form = new FormData();
+    form.append("image", file);
+    showToast("이미지 업로드 중... 🖼️");
+    try {
+      const res  = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method:"POST", body:form });
+      const json = await res.json();
+      if (json.success) return json.data.url;
+      showToast("업로드 실패: " + (json.error?.message || "알 수 없는 오류"), true);
+      return null;
+    } catch(e) {
+      showToast("업로드 오류: " + e.message, true);
+      return null;
+    }
+  }
+
+  // 이미지 삽입 핸들러
+  async function imageHandler() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const url = await uploadToImgbb(file);
+      if (!url) return;
+      const range = quill.getSelection(true);
+      quill.insertEmbed(range.index, "image", url);
+      quill.setSelection(range.index + 1);
+      showToast("이미지가 삽입되었습니다 ✓");
+    };
+    input.click();
+  }
+
+  // ── Quill 폰트 사이즈 등록 ──
+  const SizeStyle = Quill.import("attributors/style/size");
+  SizeStyle.whitelist = ["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"];
+  Quill.register(SizeStyle, true);
+
+  // Quill 초기화 — scrollingContainer를 #editor로 제한해서
+  // 페이지 스크롤 점프 원천 차단 (paste, 툴바, focus 모두 해당)
+  const quill = new Quill("#editor", {
+    theme: "snow",
+    scrollingContainer: document.getElementById("editor"),
+    placeholder: "이 서비스에 대한 사용 팁, 프롬프트 예시, 주의사항 등을 자유롭게 작성해 주세요.\n\n누구나 편집할 수 있는 공개 위키입니다.",
+    modules: {
+      toolbar: {
+        container: [
+          [{ header: [1, 2, 3, false] }],
+          [{ size: ["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"] }],
+          ["bold", "italic", "underline", "strike"],
+          [{ color: [] }, { background: [] }],
+          [{ list: "ordered" }, { list: "bullet" }],
+          ["blockquote", "code-block"],
+          ["link", "image"],
+          ["clean"]
+        ],
+        handlers: { image: imageHandler }
+      }
+    }
+  });
+
+  // Quill 툴바를 wiki-card 밖으로 꺼내 sticky 적용
+  const toolbar = document.querySelector(".ql-toolbar");
+  const stickyWrap = document.getElementById("quill-toolbar-wrap");
+  stickyWrap.appendChild(toolbar);
+
+  // focus() 시 preventScroll 강제 적용 (툴바 클릭 후 포커스 복원 시 점프 방지)
+  const qlEditor = document.querySelector(".ql-editor");
+  const origFocus = HTMLElement.prototype.focus;
+  HTMLElement.prototype.focus = function(opts) {
+    if (this === qlEditor || this.closest?.(".ql-editor")) {
+      origFocus.call(this, { preventScroll: true });
+    } else {
+      origFocus.call(this, opts);
+    }
+  };
+
+  // ── 붙여넣기 스크롤 점프 완전 차단 ──
+  // Quill onPaste 내부에서 this.container.focus() + this.quill.focus() 두 번
+  // 페이지 scrollY를 건드리지만 scrollingContainer.scrollTop만 복원함.
+  // paste 이벤트에서 window.scrollY를 저장하고 Quill setTimeout(1) 이후 복원.
+  qlEditor.addEventListener("paste", () => {
+    const savedY = window.scrollY;
+    setTimeout(() => { window.scrollTo({ top: savedY, behavior: "instant" }); }, 10);
+  }, true);
+
+  // 드래그&드롭 이미지 업로드 — ql-container 기준으로 처리 (버블링 문제 방지)
+  const editorEl = document.getElementById("editor");
+
+  editorEl.addEventListener("dragenter", (e) => {
+    if ([...e.dataTransfer.types].includes("Files")) {
+      editorEl.classList.add("drag-over");
+    }
+  }, false);
+
+  editorEl.addEventListener("dragover", (e) => {
+    e.preventDefault();
+  }, false);
+
+  editorEl.addEventListener("dragleave", (e) => {
+    // relatedTarget이 editorEl 밖으로 나갔을 때만 제거
+    if (!editorEl.contains(e.relatedTarget)) {
+      editorEl.classList.remove("drag-over");
+    }
+  }, false);
+
+  editorEl.addEventListener("drop", async (e) => {
+    editorEl.classList.remove("drag-over");
+    const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith("image/"));
+    if (!files.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    for (const file of files) {
+      const url = await uploadToImgbb(file);
+      if (!url) continue;
+      const range = quill.getSelection(true) || { index: quill.getLength() };
+      quill.insertEmbed(range.index, "image", url);
+      quill.setSelection(range.index + 1);
+    }
+    showToast("이미지가 삽입되었습니다 ✓");
+  }, false);
+
+  // 클립보드 붙여넣기 이미지 업로드
+  document.getElementById("editor").addEventListener("paste", async (e) => {
+    const items = [...(e.clipboardData?.items || [])].filter(i => i.type.startsWith("image/"));
+    if (!items.length) return;
+    e.preventDefault();
+    for (const item of items) {
+      const file = item.getAsFile();
+      const url = await uploadToImgbb(file);
+      if (!url) continue;
+      const range = quill.getSelection(true) || { index: quill.getLength() };
+      quill.insertEmbed(range.index, "image", url);
+      quill.setSelection(range.index + 1);
+    }
+    showToast("이미지가 삽입되었습니다 ✓");
+  }, true);
+
+  // ── Firebase에서 최신 내용 로드 ──
+  const contentRef = ref(db, `wikis/${KEY}/content`);
+  const historyRef = ref(db, `wikis/${KEY}/history`);
+
+  onValue(contentRef, (snap) => {
+    document.getElementById("loading").style.display = "none";
+    if (snap.exists()) {
+      try {
+        const ops = typeof snap.val() === "string" ? JSON.parse(snap.val()) : snap.val();
+        quill.setContents(ops);
+      } catch(e) {
+        quill.setContents(snap.val());
+      }
+    } else {
+      // 첫 방문 — 기본 템플릿
+      quill.setContents([
+        { insert: `${SERVICE} 사용가이드\n`, attributes: { header: 1 } },
+        { insert: "\n" },
+        { insert: "📌 서비스 개요\n", attributes: { header: 2 } },
+        { insert: "여기에 서비스 설명을 작성하세요.\n\n" },
+        { insert: "🚀 시작하기\n", attributes: { header: 2 } },
+        { insert: "여기에 시작 방법을 작성하세요.\n\n" },
+        { insert: "💡 주요 팁\n", attributes: { header: 2 } },
+        { insert: "여기에 유용한 팁을 작성하세요.\n\n" },
+        { insert: "⚠️ 주의사항\n", attributes: { header: 2 } },
+        { insert: "여기에 주의사항을 작성하세요.\n" },
+      ]);
+    }
+    document.getElementById("editor-wrap").style.opacity = "1";
+  }, { onlyOnce: true });
+
+  // ── 저장 ──
+  window.saveWiki = async function() {
+    const btns = document.querySelectorAll(".save-btn");
+    btns.forEach(b => { b.disabled = true; b.textContent = "저장 중..."; });
+
+    const delta = quill.getContents();
+    const text  = quill.getText().trim();
+    if (!text) {
+      btns.forEach(b => { b.disabled = false; b.textContent = "저장"; });
+      return;
+    }
+
+    try {
+      const serialized = JSON.stringify(delta.ops);
+      const savedAt    = Date.now();
+      const charCount  = text.length;
+
+      // 1) 현재 content 저장
+      await set(contentRef, serialized);
+
+      // 2) 히스토리 스냅샷 저장 — push()로 고유 key 생성 후 그 key에 delta 저장
+      const histMeta = await push(historyRef, {
+        savedAt,
+        charCount
+      });
+      // push된 key 아래 delta를 별도 저장 (크기 분리)
+      await set(ref(db, `wikis/${KEY}/history/${histMeta.key}/delta`), serialized);
+
+      showToast("저장되었습니다 ✓");
+      const now = new Date(savedAt).toLocaleString("ko-KR");
+      document.querySelectorAll(".last-saved-label").forEach(el => el.textContent = now + " 저장됨");
+
+      // 팝업이 열려있으면 자동 새로고침
+      const popup = document.getElementById("history-popup");
+      if (popup.classList.contains("open")) await refreshHistoryPanel();
+
+    } catch (e) {
+      showToast("저장 실패: " + e.message, true);
+      console.error("saveWiki error:", e);
+    } finally {
+      btns.forEach(b => { b.disabled = false; b.textContent = "저장"; });
+    }
+  };
+
+  // ── 히스토리 팝업 위치 계산 ──
+  function positionPopup(btn) {
+    const popup = document.getElementById("history-popup");
+    const rect  = btn.getBoundingClientRect();
+    const popupW = 320;
+    let left = rect.right - popupW;
+    if (left < 8) left = 8;
+    let top = rect.bottom + 6;
+    // 화면 하단 넘치면 버튼 위에 표시
+    if (top + 400 > window.innerHeight) top = rect.top - 6 - Math.min(400, window.innerHeight * 0.5);
+    popup.style.left = left + "px";
+    popup.style.top  = top  + "px";
+  }
+
+  window.closeHistoryPopup = function() {
+    document.getElementById("history-popup").classList.remove("open");
+  };
+
+  // 팝업 바깥 클릭 시 닫기
+  document.addEventListener("click", (e) => {
+    const popup = document.getElementById("history-popup");
+    const btn   = document.getElementById("history-btn");
+    if (!popup.contains(e.target) && e.target !== btn) {
+      popup.classList.remove("open");
+    }
+  });
+
+  // ── 히스토리 패널 렌더 ──
+  async function refreshHistoryPanel() {
+    const body = document.getElementById("history-popup-body");
+    body.innerHTML = '<div class="history-loading">불러오는 중...</div>';
+    try {
+      const snap = await get(historyRef);
+      if (!snap.exists()) {
+        body.innerHTML = '<div class="history-empty">편집 기록이 없습니다.</div>';
+        return;
+      }
+      const entries = [];
+      snap.forEach(child => {
+        const v = child.val();
+        entries.push({ key: child.key, savedAt: v.savedAt, charCount: v.charCount });
+      });
+      entries.reverse();
+
+      body.innerHTML = entries.map((e, i) => {
+        const d = e.savedAt ? new Date(e.savedAt) : null;
+        const timeStr = d ? d.toLocaleString("ko-KR") : "시간 미기록";
+        const charStr = e.charCount ? `${e.charCount}자` : "";
+        return `
+          <div class="history-item" data-key="${e.key}" onclick="restoreHistory(this)">
+            <span class="history-idx">${i === 0 ? "최신" : `#${entries.length - i}`}</span>
+            <span class="history-time">${timeStr}</span>
+            <span class="history-chars">${charStr}</span>
+          </div>`;
+      }).join("");
+    } catch(e) {
+      body.innerHTML = `<div class="history-empty">불러오기 실패: ${e.message}</div>`;
+      console.error("refreshHistoryPanel error:", e);
+    }
+  }
+
+  // ── 히스토리 팝업 토글 ──
+  window.loadHistory = async function(btn) {
+    const popup = document.getElementById("history-popup");
+    const isOpen = popup.classList.contains("open");
+    if (isOpen) { popup.classList.remove("open"); return; }
+    positionPopup(btn);
+    popup.classList.add("open");
+    await refreshHistoryPanel();
+  };
+
+  window.restoreHistory = async function(el) {
+    if (!confirm("이 버전으로 되돌릴까요? 현재 내용은 사라집니다.")) return;
+    const key = el.dataset.key;
+    try {
+      const snap = await get(ref(db, `wikis/${KEY}/history/${key}/delta`));
+      if (!snap.exists()) { showToast("해당 버전 데이터를 찾을 수 없습니다.", true); return; }
+      const raw = snap.val();
+      const parsed = JSON.parse(raw);
+      const ops = Array.isArray(parsed) ? parsed : Object.values(parsed);
+      quill.setContents(ops);
+      document.getElementById("history-popup").classList.remove("open");
+      showToast("버전이 복원되었습니다. 저장 버튼을 눌러 확정하세요.");
+    } catch(e) {
+      showToast("복원 실패: " + e.message, true);
+      console.error("restoreHistory error:", e);
+    }
+  };
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.style.background = isError ? "#791f1f" : "#27500a";
+    t.style.color = isError ? "#f7c1c1" : "#c0dd97";
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2800);
+  }
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f3;
+    --bg3: #efefec;
+    --text: #1a1a18;
+    --text2: #5f5e5a;
+    --text3: #888780;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --info-bg: #e6f1fb;
+    --info-text: #0c447c;
+    --info-border: rgba(24,95,165,0.3);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --green: #27500a;
+    --green-light: #eaf3de;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1c;
+      --bg2: #272725;
+      --bg3: #2e2e2c;
+      --text: #f0ede8;
+      --text2: #a8a69f;
+      --text3: #6e6d68;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.18);
+      --info-bg: #0c2a44;
+      --info-text: #7ab8f0;
+      --info-border: rgba(122,184,240,0.3);
+      --green: #c0dd97;
+      --green-light: #1a3008;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg3);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .back-link {
+    font-size: 13px;
+    color: var(--text3);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border);
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .back-link:hover { color: var(--text); border-color: var(--border2); }
+  .header-title {
+    font-size: 15px;
+    font-weight: 600;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .header-company {
+    font-size: 12px;
+    color: var(--text3);
+    font-weight: 400;
+  }
+
+  /* ── Pills ── */
+  .cat-pill {
+    display: inline-block;
+    font-size: 11.5px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .p-LLM    { background: #e6f1fb; color: #0c447c; }
+  .p-이미지  { background: #faeeda; color: #633806; }
+  .p-코드    { background: #eaf3de; color: #27500a; }
+  .p-영상    { background: #fbeaf0; color: #72243e; }
+  .p-검색    { background: #eeedfe; color: #3c3489; }
+  .p-음성    { background: #e1f5ee; color: #085041; }
+  .p-문서    { background: #faece7; color: #712b13; }
+  .p-에이전트{ background: #f1efe8; color: #444441; }
+  .p-클라우드{ background: #e6f1fb; color: #185fa5; }
+  @media (prefers-color-scheme: dark) {
+    .p-LLM    { background: #0c447c; color: #b5d4f4; }
+    .p-이미지  { background: #633806; color: #fac775; }
+    .p-코드    { background: #27500a; color: #c0dd97; }
+    .p-영상    { background: #72243e; color: #f4c0d1; }
+    .p-검색    { background: #3c3489; color: #cecbf6; }
+    .p-음성    { background: #085041; color: #9fe1cb; }
+    .p-문서    { background: #712b13; color: #f5c4b3; }
+    .p-에이전트{ background: #444441; color: #d3d1c7; }
+    .p-클라우드{ background: #185fa5; color: #85b7eb; }
+  }
+
+  /* ── Main ── */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 5rem;
+  }
+
+  /* ── Wiki card ── */
+  .wiki-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  .wiki-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 0.5px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .wiki-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .wiki-label {
+    font-size: 11.5px;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  #last-saved {
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .btn {
+    font-size: 12.5px;
+    padding: 5px 14px;
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border2);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s;
+    background: transparent;
+    color: var(--text2);
+  }
+  .btn:hover { color: var(--text); border-color: var(--text3); }
+  .btn-primary {
+    background: var(--green-light);
+    color: var(--green);
+    border-color: rgba(39,80,10,0.2);
+    font-weight: 600;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── Loading ── */
+  #loading {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text3);
+    font-size: 13.5px;
+  }
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--text3);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Quill 툴바 고정 래퍼 ── */
+  #quill-toolbar-wrap {
+    position: sticky;
+    top: var(--header-h, 57px);
+    z-index: 90;
+    margin-bottom: -0.5px; /* wiki-card 상단 border와 겹침 방지 */
+  }
+
+  /* ── Quill 커스텀 ── */
+  .ql-snow .ql-size .ql-picker-label::before,
+  .ql-snow .ql-size .ql-picker-item::before { content: attr(data-value) !important; }
+  .ql-snow .ql-size .ql-picker-label[data-value="12px"]::before { content: "12" !important; }
+  .ql-snow .ql-size .ql-picker-label[data-value="14px"]::before { content: "14" !important; }
+  .ql-snow .ql-size .ql-picker-label[data-value="16px"]::before { content: "16" !important; }
+  .ql-snow .ql-size .ql-picker-label[data-value="18px"]::before { content: "18" !important; }
+  .ql-snow .ql-size .ql-picker-label[data-value="20px"]::before { content: "20" !important; }
+  .ql-snow .ql-size .ql-picker-label[data-value="24px"]::before { content: "24" !important; }
+  .ql-snow .ql-size .ql-picker-label[data-value="28px"]::before { content: "28" !important; }
+  .ql-snow .ql-size .ql-picker-label[data-value="32px"]::before { content: "32" !important; }
+  .ql-snow .ql-size .ql-picker-item[data-value="12px"]::before { content: "12" !important; font-size: 12px !important; }
+  .ql-snow .ql-size .ql-picker-item[data-value="14px"]::before { content: "14" !important; font-size: 14px !important; }
+  .ql-snow .ql-size .ql-picker-item[data-value="16px"]::before { content: "16" !important; font-size: 16px !important; }
+  .ql-snow .ql-size .ql-picker-item[data-value="18px"]::before { content: "18" !important; font-size: 18px !important; }
+  .ql-snow .ql-size .ql-picker-item[data-value="20px"]::before { content: "20" !important; font-size: 20px !important; }
+  .ql-snow .ql-size .ql-picker-item[data-value="24px"]::before { content: "24" !important; font-size: 24px !important; }
+  .ql-snow .ql-size .ql-picker-item[data-value="28px"]::before { content: "28" !important; font-size: 28px !important; }
+  .ql-snow .ql-size .ql-picker-item[data-value="32px"]::before { content: "32" !important; font-size: 32px !important; }
+  .ql-snow .ql-size.ql-picker { width: 58px !important; }
+  @media (prefers-color-scheme: dark) {
+    .ql-snow .ql-size .ql-picker-options { background: var(--bg2) !important; border-color: var(--border2) !important; }
+    .ql-snow .ql-size .ql-picker-item { color: var(--text2) !important; }
+    .ql-snow .ql-size .ql-picker-item:hover { color: var(--text) !important; }
+  }
+  #editor-wrap {
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .ql-toolbar.ql-snow {
+    border: none !important;
+    border-bottom: 0.5px solid var(--border) !important;
+    padding: 8px 12px !important;
+    background: var(--bg2);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+  .ql-container.ql-snow {
+    border: none !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 14.5px !important;
+  }
+  .ql-editor {
+    min-height: 480px;
+    padding: 1.5rem 2rem !important;
+    color: var(--text) !important;
+    line-height: 1.75 !important;
+  }
+  .ql-editor.ql-blank::before {
+    color: var(--text3) !important;
+    font-style: normal !important;
+    font-size: 13.5px !important;
+    line-height: 1.7 !important;
+  }
+  .ql-editor h1 { font-size: 1.5em; font-weight: 700; margin-bottom: 0.4em; }
+  .ql-editor h2 { font-size: 1.2em; font-weight: 600; margin: 1.2em 0 0.3em; color: var(--text2); }
+  .ql-editor h3 { font-size: 1em; font-weight: 600; margin: 1em 0 0.2em; }
+  .ql-editor blockquote {
+    border-left: 3px solid var(--border2) !important;
+    padding-left: 1em !important;
+    color: var(--text2) !important;
+    margin: 0.8em 0 !important;
+  }
+  .ql-editor pre {
+    background: var(--bg2) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 12px 16px !important;
+    font-size: 13px !important;
+    color: var(--text) !important;
+  }
+  .ql-editor img {
+    max-width: 100%;
+    border-radius: var(--radius-md);
+    margin: 6px 0;
+    display: block;
+    cursor: pointer;
+  }
+  #editor.drag-over {
+    outline: 2px dashed var(--info-text);
+    outline-offset: -4px;
+    background: var(--info-bg);
+  }
+  @media (prefers-color-scheme: dark) {
+    .ql-toolbar.ql-snow { background: var(--bg2); }
+    .ql-toolbar .ql-stroke { stroke: var(--text2) !important; }
+    .ql-toolbar .ql-fill  { fill:   var(--text2) !important; }
+    .ql-toolbar .ql-picker-label { color: var(--text2) !important; }
+    .ql-toolbar button:hover .ql-stroke { stroke: var(--text) !important; }
+    .ql-toolbar button:hover .ql-fill   { fill:   var(--text) !important; }
+    .ql-picker-options { background: var(--bg2) !important; border-color: var(--border2) !important; }
+    .ql-picker-item { color: var(--text2) !important; }
+  }
+
+  /* ── 히스토리 드롭다운 팝업 ── */
+  #history-popup {
+    display: none;
+    position: fixed;
+    z-index: 500;
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--bg);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  }
+  #history-popup.open { display: block; }
+  .history-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 1;
+  }
+  .history-popup-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text3);
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+  }
+  .history-popup-close:hover { color: var(--text); }
+  .history-loading, .history-empty {
+    padding: 1.5rem;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text3);
+  }
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 0.5px solid var(--border);
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.1s;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-item:hover { background: var(--bg2); }
+  .history-idx {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--info-bg);
+    color: var(--info-text);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .history-time { color: var(--text2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-chars { color: var(--text3); font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+
+  /* ── Notice ── */
+  .notice {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    background: var(--info-bg);
+    border: 0.5px solid var(--info-border);
+    font-size: 12px;
+    color: var(--info-text);
+    line-height: 1.5;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    padding: 9px 20px;
+    border-radius: var(--radius-lg);
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text3);
+    padding: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  /* ── 맨 위로 버튼 ── */
+  #scroll-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 0.5px solid var(--border2);
+    color: var(--text2);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 998;
+  }
+  #scroll-top.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  #scroll-top:hover { color: var(--text); border-color: var(--text3); }
+
+  @media (max-width: 600px) {
+    header { padding: 0.8rem 1rem; }
+    main { padding: 1rem 1rem 4rem; }
+    .ql-editor { padding: 1rem !important; }
+    #scroll-top { bottom: 1.2rem; right: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="back-link" href="index.html">← 목록으로</a>
+    <div class="header-title">
+      <span id="wiki-service-name">로딩 중...</span>
+      <span class="header-company" id="wiki-company"></span>
+      <span id="wiki-cat-pill" class="cat-pill"></span>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+      <span class="last-saved-label" style="font-size:11px;color:var(--text3);white-space:nowrap;"></span>
+      <button class="btn btn-primary save-btn" onclick="saveWiki()">저장</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Quill 툴바 고정 래퍼 (wiki-card 밖에 위치해야 sticky 작동) -->
+  <div id="quill-toolbar-wrap"></div>
+
+  <div class="wiki-card">
+    <!-- 위키 툴바 -->
+    <div class="wiki-toolbar">
+      <div class="wiki-toolbar-left">
+        <span class="wiki-label">📝 위키 편집</span>
+        <span class="last-saved-label"></span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;position:relative;">
+        <button class="btn" id="history-btn" onclick="loadHistory(this)">편집 기록 ▾</button>
+        <button class="btn btn-primary save-btn" onclick="saveWiki()">저장</button>
+      </div>
+    </div>
+
+    <!-- 로딩 -->
+    <div id="loading"><span class="spinner"></span>내용을 불러오는 중...</div>
+
+    <!-- 에디터 -->
+    <div id="editor-wrap">
+      <div id="editor"></div>
+    </div>
+  </div>
+
+  <!-- 안내 -->
+  <div class="notice">
+    <span>ℹ️</span>
+    <span>이 위키는 <strong>누구나 자유롭게 편집</strong>할 수 있는 공개 문서입니다.
+    유용한 사용 팁, 프롬프트 예시, 요금제 비교, 주의사항 등을 자유롭게 추가해 주세요.
+    이미지는 툴바 🖼️ 버튼, <strong>드래그&드롭</strong>, <strong>클립보드 붙여넣기</strong> 모두 지원합니다.
+    편집 후 반드시 <strong>저장</strong> 버튼을 눌러주세요.</span>
+  </div>
+</main>
+
+<footer>Awesome AI Services Wiki &nbsp;·&nbsp; Firebase Realtime DB 저장</footer>
+
+<div id="history-popup">
+  <div class="history-popup-header">
+    <span>편집 기록</span>
+    <button class="history-popup-close" onclick="closeHistoryPopup()">✕</button>
+  </div>
+  <div id="history-popup-body"></div>
+</div>
+
+<div id="toast"></div>
+
+<button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="맨 위로">↑</button>
+
+<script>
+  const scrollBtn = document.getElementById("scroll-top");
+  window.addEventListener("scroll", () => {
+    scrollBtn.classList.toggle("visible", window.scrollY > 300);
+  });
+
+  // 헤더 높이를 CSS 변수로 설정 (툴바 sticky top 기준)
+  function setHeaderHeight() {
+    const h = document.querySelector("header").offsetHeight;
+    document.documentElement.style.setProperty("--header-h", h + "px");
+  }
+  setHeaderHeight();
+  window.addEventListener("resize", setHeaderHeight);
+</script>
+
+</body>
+</html>
