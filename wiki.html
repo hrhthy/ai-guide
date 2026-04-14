@@ -655,6 +655,51 @@
     display: block;
     cursor: pointer;
   }
+  .ql-editor img.img-selected {
+    outline: 2px solid var(--info-text);
+    outline-offset: 1px;
+  }
+
+  /* ── 이미지 리사이즈 오버레이 ── */
+  #img-resize-overlay {
+    display: none;
+    position: fixed;
+    z-index: 200;
+    pointer-events: none;
+    box-sizing: border-box;
+  }
+  #img-resize-overlay.active { display: block; }
+  .resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--info-text);
+    border: 1.5px solid #fff;
+    border-radius: 2px;
+    pointer-events: all;
+    cursor: nwse-resize;
+  }
+  .resize-handle.tl { top: -5px;  left: -5px;  cursor: nwse-resize; }
+  .resize-handle.tr { top: -5px;  right: -5px; cursor: nesw-resize; }
+  .resize-handle.bl { bottom: -5px; left: -5px;  cursor: nesw-resize; }
+  .resize-handle.br { bottom: -5px; right: -5px; cursor: nwse-resize; }
+  .resize-handle.tm { top: -5px;  left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+  .resize-handle.bm { bottom: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+  .resize-handle.ml { left: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+  .resize-handle.mr { right: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+  #img-resize-size-label {
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--info-text);
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
   #editor.drag-over {
     outline: 2px dashed var(--info-text);
     outline-offset: -4px;
@@ -882,9 +927,108 @@
   <div id="history-popup-body"></div>
 </div>
 
+<div id="img-resize-overlay">
+  <div class="resize-handle tl" data-dir="tl"></div>
+  <div class="resize-handle tm" data-dir="tm"></div>
+  <div class="resize-handle tr" data-dir="tr"></div>
+  <div class="resize-handle ml" data-dir="ml"></div>
+  <div class="resize-handle mr" data-dir="mr"></div>
+  <div class="resize-handle bl" data-dir="bl"></div>
+  <div class="resize-handle bm" data-dir="bm"></div>
+  <div class="resize-handle br" data-dir="br"></div>
+  <div id="img-resize-size-label"></div>
+</div>
+
 <div id="toast"></div>
 
 <button id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="맨 위로">↑</button>
+
+<script>
+  // ── 이미지 리사이즈 ──
+  const overlay   = document.getElementById("img-resize-overlay");
+  const sizeLabel = document.getElementById("img-resize-size-label");
+  let selectedImg = null;
+  let resizing    = null; // { dir, startX, startY, startW, startH }
+
+  function syncOverlay() {
+    if (!selectedImg) return;
+    const r = selectedImg.getBoundingClientRect();
+    overlay.style.left   = r.left   + "px";
+    overlay.style.top    = r.top    + "px";
+    overlay.style.width  = r.width  + "px";
+    overlay.style.height = r.height + "px";
+    sizeLabel.textContent = Math.round(r.width) + " × " + Math.round(r.height);
+  }
+
+  function selectImg(img) {
+    if (selectedImg) selectedImg.classList.remove("img-selected");
+    selectedImg = img;
+    img.classList.add("img-selected");
+    overlay.classList.add("active");
+    syncOverlay();
+  }
+
+  function deselectImg() {
+    if (selectedImg) selectedImg.classList.remove("img-selected");
+    selectedImg = null;
+    overlay.classList.remove("active");
+  }
+
+  // 에디터 내 이미지 클릭 감지
+  document.getElementById("editor").addEventListener("click", (e) => {
+    if (e.target.tagName === "IMG") { selectImg(e.target); e.stopPropagation(); }
+    else deselectImg();
+  });
+  document.addEventListener("click", (e) => {
+    if (!overlay.contains(e.target)) deselectImg();
+  });
+
+  // 스크롤/리사이즈 시 오버레이 위치 갱신
+  window.addEventListener("scroll", syncOverlay, true);
+  window.addEventListener("resize", syncOverlay);
+
+  // 핸들 드래그
+  overlay.querySelectorAll(".resize-handle").forEach(handle => {
+    handle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!selectedImg) return;
+      const r = selectedImg.getBoundingClientRect();
+      resizing = {
+        dir: handle.dataset.dir,
+        startX: e.clientX, startY: e.clientY,
+        startW: r.width,   startH: r.height,
+        aspect: r.width / r.height
+      };
+    });
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!resizing || !selectedImg) return;
+    const dx = e.clientX - resizing.startX;
+    const dy = e.clientY - resizing.startY;
+    const { dir, startW, startH } = resizing;
+
+    let newW = startW, newH = startH;
+
+    if (dir === "br" || dir === "mr" || dir === "tr") newW = Math.max(40, startW + dx);
+    if (dir === "bl" || dir === "ml" || dir === "tl") newW = Math.max(40, startW - dx);
+    if (dir === "bm" || dir === "bl" || dir === "br") newH = Math.max(40, startH + dy);
+    if (dir === "tm" || dir === "tl" || dir === "tr") newH = Math.max(40, startH - dy);
+
+    // 모서리 핸들은 비율 유지
+    if (["tl","tr","bl","br"].includes(dir)) {
+      if (Math.abs(dx) > Math.abs(dy)) newH = newW / resizing.aspect;
+      else newW = newH * resizing.aspect;
+    }
+
+    selectedImg.style.width  = Math.round(newW) + "px";
+    selectedImg.style.height = Math.round(newH) + "px";
+    syncOverlay();
+  });
+
+  document.addEventListener("mouseup", () => { resizing = null; });
+</script>
 
 <script>
   const scrollBtn = document.getElementById("scroll-top");
