@@ -859,7 +859,7 @@ const SERVICES = [
   { name:"Canva",            company:"Canva",        cat:"이미지",   desc:"AI 기능 탑재 온라인 디자인 툴. Magic Studio 포함.",    url:"https://canva.com",                          docs:"https://www.canva.com/developers",                guide:true,    hot:true },
   { name:"Framer",           company:"Framer",       cat:"이미지",   desc:"AI 웹사이트 빌더. 디자인 → 퍼블리시 원스톱.",         url:"https://framer.com",                         docs:"https://www.framer.com/developers",               guide:true },
 
-  { name:"Replit",           company:"Replit",       cat:"코드",     desc:"브라우저 기반 코드 실행 + AI 에이전트.",              url:"https://replit.com",                         docs:"https://docs.replit.com",                        wiki_page:"Replit-guide" },
+  { name:"Replit",           company:"Replit",       cat:"코드",     desc:"브라우저 기반 코드 실행 + AI 에이전트.",              url:"https://replit.com",                         docs:"https://docs.replit.com",                        wiki_page:"https://ai-guide-pages-deb468.gitlab.io/Replit-guide/" },
   { name:"Cursor",           company:"Anysphere",    cat:"코드",     desc:"VSCode 포크 AI 에디터. Tab 자동완성 + Composer.",      url:"https://cursor.com",                         docs:"https://docs.cursor.com",                        guide:true,    hot:true },
   { name:"GitHub Copilot",   company:"GitHub",       cat:"코드",     desc:"IDE 플러그인. PR 설명·테스트 자동 생성.",             url:"https://github.com/features/copilot",        docs:"https://docs.github.com/en/copilot",             guide:true },
   { name:"Claude Code",      company:"Anthropic",    cat:"코드",     desc:"CLI 기반 에이전트 코딩 도구.",                        url:"https://claude.ai/code",                     docs:"https://docs.anthropic.com/en/docs/claude-code", guide:true,    isnew:true },
@@ -897,10 +897,10 @@ function buildFilters() {
 }
 
 function cardHTML(s) {
-  // 2. Wiki 링크 동적 생성 로직
-  // wiki_page가 명시되어 있으면 그것을 사용, 없으면 이름을 기반으로 생성(공백 -> -)
-  const pageSlug = s.wiki_page || s.name.replace(/\s+/g, '-');
-  const wikiUrl = `${GITLAB_WIKI_BASE}/${pageSlug}`;
+  // 절대 URL이면 그대로 사용, 아니면 GitLab Wiki 경로로 생성
+  const wikiUrl = s.wiki_page?.startsWith('http')
+    ? s.wiki_page
+    : `${GITLAB_WIKI_BASE}/${s.wiki_page || s.name.replace(/\s+/g, '-')}`;
 
   return `
     <div class="card">
